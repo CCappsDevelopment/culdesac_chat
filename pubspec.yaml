@@ -1,5 +1,5 @@
 name: culdesac_chat
-description: "A new Flutter project."
+description: "A simple chat application built with Flutter."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -30,6 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  intl: ^0.18.0 # The intl package is used for internationalization and localization.
+  flutter_markdown: ^0.6.18 # The flutter_markdown package is used to render Markdown text in Flutter.
+
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -73,7 +76,157 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
-  # fonts:
+  fonts:
+    - family: ArchivoBlack
+      fonts:
+        - asset: fonts/ArchivoBlack-Regular.ttf
+          weight: 400
+    
+    - family: BebasKai
+      fonts:
+        - asset: fonts/BebasKai.ttf
+          weight: 400
+    
+    - family: EBGaramond
+      fonts:
+        - asset: fonts/EBGaramond-Regular.ttf
+          weight: 400
+        - asset: fonts/EBGaramond-Italic.ttf
+          weight: 400
+          style: italic
+        - asset: fonts/EBGaramond-Medium.ttf
+          weight: 500
+        - asset: fonts/EBGaramond-MediumItalic.ttf
+          weight: 500
+          style: italic
+        - asset: fonts/EBGaramond-SemiBold.ttf
+          weight: 600
+        - asset: fonts/EBGaramond-SemiBoldItalic.ttf
+          weight: 600
+          style: italic
+        - asset: fonts/EBGaramond-Bold.ttf
+          weight: 700
+        - asset: fonts/EBGaramond-BoldItalic.ttf
+          weight: 700
+          style: italic
+        - asset: fonts/EBGaramond-ExtraBold.ttf
+          weight: 800
+        - asset: fonts/EBGaramond-ExtraBoldItalic.ttf
+          weight: 800
+          style: italic
+    
+    - family: Helvetica
+      fonts:
+        - asset: fonts/Helvetica.ttf
+          weight: 400
+        - asset: fonts/Helvetica-Oblique.ttf
+          weight: 400
+          style: italic
+        - asset: fonts/helvetica-light-587ebe5a59211.ttf
+          weight: 300
+        - asset: fonts/Helvetica-Bold.ttf
+          weight: 700
+        - asset: fonts/Helvetica-BoldOblique.ttf
+          weight: 700
+          style: italic
+    
+    - family: LexendMega
+      fonts:
+        - asset: fonts/LexendMega-Thin.ttf
+          weight: 100
+        - asset: fonts/LexendMega-ExtraLight.ttf
+          weight: 200
+        - asset: fonts/LexendMega-Light.ttf
+          weight: 300
+        - asset: fonts/LexendMega-Regular.ttf
+          weight: 400
+        - asset: fonts/LexendMega-Medium.ttf
+          weight: 500
+        - asset: fonts/LexendMega-SemiBold.ttf
+          weight: 600
+        - asset: fonts/LexendMega-Bold.ttf
+          weight: 700
+        - asset: fonts/LexendMega-ExtraBold.ttf
+          weight: 800
+        - asset: fonts/LexendMega-Black.ttf
+          weight: 900
+    
+    - family: MabryPro
+      fonts:
+        - asset: fonts/MabryPro-Light.ttf
+          weight: 300
+        - asset: fonts/MabryPro-LightItalic.ttf
+          weight: 300
+          style: italic
+        - asset: fonts/MabryPro-Regular.ttf
+          weight: 400
+        - asset: fonts/MabryPro-Italic.ttf
+          weight: 400
+          style: italic
+        - asset: fonts/MabryPro-Medium.ttf
+          weight: 500
+        - asset: fonts/MabryPro-MediumItalic.ttf
+          weight: 500
+          style: italic
+        - asset: fonts/MabryPro-Bold.ttf
+          weight: 700
+        - asset: fonts/MabryPro-BoldItalic.ttf
+          weight: 700
+          style: italic
+        - asset: fonts/MabryPro-Black.ttf
+          weight: 900
+        - asset: fonts/MabryPro-BlackItalic.ttf
+          weight: 900
+          style: italic
+    
+    - family: PublicSans
+      fonts:
+        - asset: fonts/PublicSans-Thin.ttf
+          weight: 100
+        - asset: fonts/PublicSans-ThinItalic.ttf
+          weight: 100
+          style: italic
+        - asset: fonts/PublicSans-ExtraLight.ttf
+          weight: 200
+        - asset: fonts/PublicSans-ExtraLightItalic.ttf
+          weight: 200
+          style: italic
+        - asset: fonts/PublicSans-Light.ttf
+          weight: 300
+        - asset: fonts/PublicSans-LightItalic.ttf
+          weight: 300
+          style: italic
+        - asset: fonts/PublicSans-Regular.ttf
+          weight: 400
+        - asset: fonts/PublicSans-Italic.ttf
+          weight: 400
+          style: italic
+        - asset: fonts/PublicSans-Medium.ttf
+          weight: 500
+        - asset: fonts/PublicSans-MediumItalic.ttf
+          weight: 500
+          style: italic
+        - asset: fonts/PublicSans-SemiBold.ttf
+          weight: 600
+        - asset: fonts/PublicSans-SemiBoldItalic.ttf
+          weight: 600
+          style: italic
+        - asset: fonts/PublicSans-Bold.ttf
+          weight: 700
+        - asset: fonts/PublicSans-BoldItalic.ttf
+          weight: 700
+          style: italic
+        - asset: fonts/PublicSans-ExtraBold.ttf
+          weight: 800
+        - asset: fonts/PublicSans-ExtraBoldItalic.ttf
+          weight: 800
+          style: italic
+        - asset: fonts/PublicSans-Black.ttf
+          weight: 900
+        - asset: fonts/PublicSans-BlackItalic.ttf
+          weight: 900
+          style: italic
+
   #   - family: Schyler
   #     fonts:
   #       - asset: fonts/Schyler-Regular.ttf
