@@ -28,7 +28,7 @@ class ChatMessageList extends StatelessWidget {
       ),
       child: Scrollbar(
         controller: scrollController,
-        thumbVisibility: true,
+        thumbVisibility: false,
         child: ListView.builder(
           controller: scrollController,
           reverse: true,
@@ -38,14 +38,12 @@ class ChatMessageList extends StatelessWidget {
             parent: AlwaysScrollableScrollPhysics(),
           ),
           itemBuilder: (context, index) {
+            // Get the message from the end of the list to maintain the chat order
             final message = messages[messages.length - 1 - index];
-
             // Format the timestamp with contextual date information
             final formattedTime = _getFormattedTimestamp(message.timestamp);
-
             // Calculate avatar size based on device type
             final double avatarSize = _getAvatarSize(context);
-
             // Process the message text to ensure line breaks are preserved
             final processedText = _processMarkdownText(message.text);
 
@@ -64,6 +62,7 @@ class ChatMessageList extends StatelessWidget {
                       Text(
                         "[Test User]",
                         style: TextStyle(
+                          fontFamily: 'Helvetica',
                           fontWeight: FontWeight.bold,
                           fontSize: 14.0,
                         ),
@@ -72,6 +71,7 @@ class ChatMessageList extends StatelessWidget {
                       Text(
                         formattedTime,
                         style: TextStyle(
+                          fontFamily: 'Helvetica',
                           fontSize: 14.0,
                           color: Colors.grey[700],
                         ),

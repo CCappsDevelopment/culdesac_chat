@@ -4,10 +4,7 @@ import 'package:flutter/services.dart';
 class MessageInput extends StatefulWidget {
   final Function(String) onSubmitted;
 
-  const MessageInput({
-    super.key,
-    required this.onSubmitted,
-  });
+  const MessageInput({super.key, required this.onSubmitted});
 
   @override
   MessageInputState createState() => MessageInputState();
@@ -24,10 +21,8 @@ class MessageInputState extends State<MessageInput> {
       onKeyEvent: (FocusNode node, KeyEvent event) {
         if (event is KeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.enter) {
-            // Check if Ctrl or Shift is pressed
-            if (HardwareKeyboard.instance.isControlPressed || 
+            if (HardwareKeyboard.instance.isControlPressed ||
                 HardwareKeyboard.instance.isShiftPressed) {
-              // Insert a newline character at the current cursor position
               final text = _controller.text;
               final selection = _controller.selection;
               final newText = text.replaceRange(
@@ -37,13 +32,10 @@ class MessageInputState extends State<MessageInput> {
               );
               _controller.value = TextEditingValue(
                 text: newText,
-                selection: TextSelection.collapsed(
-                  offset: selection.start + 1,
-                ),
+                selection: TextSelection.collapsed(offset: selection.start + 1),
               );
               return KeyEventResult.handled;
             } else {
-              // Submit the message
               if (_controller.text.isNotEmpty) {
                 widget.onSubmitted(_controller.text);
                 _controller.clear();
@@ -68,46 +60,60 @@ class MessageInputState extends State<MessageInput> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              focusNode: _focusNode,
-              decoration: InputDecoration(
-                hintText: 'Message . . .',
-                border: OutlineInputBorder(),
-                helperText: 'Ctrl+Enter or Shift+Enter for new line',
-                helperStyle: TextStyle(fontSize: 12),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          // Row containing TextField and send button
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  decoration: InputDecoration(
+                    hintText: 'Message . . .',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 14,
+                    ),
+                  ),
+                  style: TextStyle(fontSize: 16.0, fontFamily: 'Helvetica'),
+                  maxLines: 4,
+                  minLines: 1,
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: TextInputAction.newline,
+                  scrollPhysics: ClampingScrollPhysics(),
+                ),
               ),
-              style: TextStyle(
-                fontSize: 16.0,
-                fontFamily: 'Helvetica',
+              SizedBox(width: 8.0),
+              Container(
+                height: 48.0,
+                width: 48.0,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(4.0),
+                ),
+                child: IconButton(
+                  icon: Icon(Icons.send),
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  onPressed: () {
+                    if (_controller.text.isNotEmpty) {
+                      widget.onSubmitted(_controller.text);
+                      _controller.clear();
+                    }
+                  },
+                ),
               ),
-              maxLines: null,
-              keyboardType: TextInputType.multiline,
-              textInputAction: TextInputAction.newline,
-            ),
+            ],
           ),
-          SizedBox(width: 8.0),
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(4.0),
-            ),
-            child: IconButton(
-              icon: Icon(Icons.send),
-              color: Theme.of(context).colorScheme.onPrimary,
-              padding: EdgeInsets.all(12),
-              onPressed: () {
-                if (_controller.text.isNotEmpty) {
-                  widget.onSubmitted(_controller.text);
-                  _controller.clear();
-                }
-              },
-            ),
+          // Helper text below the input row
+          SizedBox(height: 4),
+          Text(
+            'Ctrl+Enter or Shift+Enter for new line',
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           ),
         ],
       ),
