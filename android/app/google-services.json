@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "38021234140",
+    "project_id": "culdesac-chat",
+    "storage_bucket": "culdesac-chat.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:38021234140:android:39a03747495f07ffd7a319",
+        "android_client_info": {
+          "package_name": "com.example.culdesac_chat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0kjdnz27Q9a-IwXbGinWmoespH5Q1iXY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,9 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_options.dart';
 import 'constants/app_constants.dart';
 import 'screens/chat_screen.dart';
+import 'screens/login_screen.dart';
+import 'services/chat_repository.dart';
+import 'services/auth_service.dart';
 
-void main() {
-  runApp(CulDeSacChatApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Configure Firestore settings for both web and mobile
+  FirebaseFirestore.instance.settings = Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  );
+
+  if (kIsWeb) {
+    // Additional web-specific configuration if needed
+    // For example, you might want to configure network connectivity assumptions
+    FirebaseFirestore.instance.enableNetwork();
+  }
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => ChatRepository()),
+        Provider<AuthService>(create: (_) => AuthService()),
+      ],
+      child: CulDeSacChatApp(),
+    ),
+  );
 }
 
 class CulDeSacChatApp extends StatelessWidget {
@@ -14,7 +46,20 @@ class CulDeSacChatApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFFFF01F6)),
       ),
-      home: ChatScreen(),
+      home: StreamBuilder<User?>(
+        stream: context.read<AuthService>().authStateChanges,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.active) {
+            final User? user = snapshot.data;
+            return user == null ? LoginScreen() : ChatScreen();
+          }
+          return Scaffold(body: Center(child: CircularProgressIndicator()));
+        },
+      ),
+      routes: {
+        '/login': (context) => LoginScreen(),
+        '/chat': (context) => ChatScreen(),
+      },
     );
   }
 }

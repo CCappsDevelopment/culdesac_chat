@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../models/chat_message.dart';
+import '../models/message_status.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
@@ -28,7 +29,7 @@ class ChatMessageList extends StatelessWidget {
       ),
       child: Scrollbar(
         controller: scrollController,
-        thumbVisibility: true,
+        thumbVisibility: false,
         child: ListView.builder(
           controller: scrollController,
           reverse: true,
@@ -38,19 +39,19 @@ class ChatMessageList extends StatelessWidget {
             parent: AlwaysScrollableScrollPhysics(),
           ),
           itemBuilder: (context, index) {
+            // Get the message from the end of the list to maintain the chat order
             final message = messages[messages.length - 1 - index];
-
             // Format the timestamp with contextual date information
             final formattedTime = _getFormattedTimestamp(message.timestamp);
-
             // Calculate avatar size based on device type
             final double avatarSize = _getAvatarSize(context);
-
             // Process the message text to ensure line breaks are preserved
             final processedText = _processMarkdownText(message.text);
 
             return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: message.isFromCurrentUser 
+                ? CrossAxisAlignment.end 
+                : CrossAxisAlignment.start,
               children: [
                 // Sender info row
                 Padding(
@@ -60,10 +61,14 @@ class ChatMessageList extends StatelessWidget {
                     right: 8.0,
                   ),
                   child: Row(
+                    mainAxisAlignment: message.isFromCurrentUser 
+                      ? MainAxisAlignment.end 
+                      : MainAxisAlignment.start,
                     children: [
                       Text(
-                        "[Test User]",
+                        message.senderName,
                         style: TextStyle(
+                          fontFamily: 'Helvetica',
                           fontWeight: FontWeight.bold,
                           fontSize: 14.0,
                         ),
@@ -72,10 +77,15 @@ class ChatMessageList extends StatelessWidget {
                       Text(
                         formattedTime,
                         style: TextStyle(
+                          fontFamily: 'Helvetica',
                           fontSize: 14.0,
                           color: Colors.grey[700],
                         ),
                       ),
+                      if (message.isFromCurrentUser) ...[
+                        SizedBox(width: 8.0),
+                        _buildStatusIcon(message.status),
+                      ],
                     ],
                   ),
                 ),
@@ -83,6 +93,23 @@ class ChatMessageList extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Avatar for other users (left side)
+                    if (!message.isFromCurrentUser) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Container(
+                          width: avatarSize,
+                          height: avatarSize,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.secondary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.black, width: 2.0),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 8.0),
+                    ],
+                    // Message bubble
                     Expanded(
                       child: Container(
                         margin: const EdgeInsets.only(
@@ -92,7 +119,9 @@ class ChatMessageList extends StatelessWidget {
                         ),
                         padding: const EdgeInsets.all(16.0),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
+                          color: message.isFromCurrentUser
+                              ? Theme.of(context).colorScheme.primaryContainer
+                              : Theme.of(context).colorScheme.secondaryContainer,
                           borderRadius: BorderRadius.circular(8.0),
                           border: Border.all(color: Colors.black, width: 2.0),
                           boxShadow: [
@@ -116,20 +145,22 @@ class ChatMessageList extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Avatar circle
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Container(
-                        width: avatarSize,
-                        height: avatarSize,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black, width: 2.0),
+                    // Avatar for current user (right side)
+                    if (message.isFromCurrentUser) ...[
+                      SizedBox(width: 8.0),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Container(
+                          width: avatarSize,
+                          height: avatarSize,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.black, width: 2.0),
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox(width: 8.0), // Add some space after the avatar
+                    ],
                   ],
                 ),
               ],
@@ -138,6 +169,21 @@ class ChatMessageList extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // Helper method to display message status icon
+  Widget _buildStatusIcon(MessageStatus status) {
+    const iconSize = 12.0;
+    switch(status) {
+      case MessageStatus.sent:
+        return Icon(Icons.check, size: iconSize, color: Colors.grey);
+      case MessageStatus.delivered:
+        return Icon(Icons.done_all, size: iconSize, color: Colors.grey);
+      case MessageStatus.read:
+        return Icon(Icons.done_all, size: iconSize, color: Colors.blue);
+      case MessageStatus.error:
+        return Icon(Icons.error_outline, size: iconSize, color: Colors.red);
+    }
   }
 
   // Helper method to process markdown text to preserve line breaks
