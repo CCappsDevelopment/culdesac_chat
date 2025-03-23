@@ -12,6 +12,7 @@ dependencies:
   flutter_markdown: ^0.6.18 # The flutter_markdown package is used to render Markdown text in Flutter.
   cupertino_icons: ^1.0.8
   firebase_core: ^3.12.1
+  firebase_auth: ^5.5.1
   cloud_firestore: ^5.6.5
   provider: ^6.1.2
   async: ^2.11.0

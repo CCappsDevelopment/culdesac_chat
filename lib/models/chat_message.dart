@@ -6,13 +6,17 @@ class ChatMessage {
   final String senderId;
   final String groupId;
   final MessageStatus status;
+  final bool isFromCurrentUser;
+  final String senderName;
 
   ChatMessage({
     required this.text,
     required this.senderId,
     required this.groupId,
+    this.senderName = "[Test User]",
     DateTime? timestamp,
     this.status = MessageStatus.sent,
+    this.isFromCurrentUser = true,
   }) : timestamp = timestamp ?? DateTime.now();
 
   ChatMessage copyWith({
@@ -21,6 +25,8 @@ class ChatMessage {
     String? senderId,
     String? groupId,
     MessageStatus? status,
+    bool? isFromCurrentUser,
+    String? senderName,
   }) {
     return ChatMessage(
       text: text ?? this.text,
@@ -28,6 +34,8 @@ class ChatMessage {
       groupId: groupId ?? this.groupId,
       timestamp: timestamp ?? this.timestamp,
       status: status ?? this.status,
+      isFromCurrentUser: isFromCurrentUser ?? this.isFromCurrentUser,
+      senderName: senderName ?? this.senderName,
     );
   }
 }
