@@ -11,6 +11,7 @@ class LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   String _email = '';
   String _password = '';
+  String _errorMessage = '';
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +38,15 @@ class LoginScreenState extends State<LoginScreen> {
                             : null,
                 onChanged: (val) => setState(() => _password = val),
               ),
+              if (_errorMessage.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    _errorMessage,
+                    style: TextStyle(color: Colors.red, fontSize: 14.0),
+                  ),
+                ),
+              SizedBox(height: 16),
               ElevatedButton(
                 child: Text('Sign In'),
                 onPressed: () async {
@@ -47,6 +57,10 @@ class LoginScreenState extends State<LoginScreen> {
                     );
                     if (result != null && mounted) {
                       Navigator.pushReplacementNamed(context, '/chat');
+                    } else if (mounted) {
+                      setState(() {
+                        _errorMessage = 'Incorrect username or password!';
+                      });
                     }
                   }
                 },

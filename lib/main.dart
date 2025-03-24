@@ -8,8 +8,10 @@ import 'firebase_options.dart';
 import 'constants/app_constants.dart';
 import 'screens/chat_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/profile_edit_screen.dart';
 import 'services/chat_repository.dart';
 import 'services/auth_service.dart';
+import 'services/user_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,16 +24,19 @@ void main() async {
   );
 
   if (kIsWeb) {
-    // Additional web-specific configuration if needed
-    // For example, you might want to configure network connectivity assumptions
     FirebaseFirestore.instance.enableNetwork();
   }
+
+  final userRepository = UserRepository();
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => ChatRepository()),
-        Provider<AuthService>(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (context) => userRepository),
+        Provider<AuthService>(
+          create: (_) => AuthService(userRepository: userRepository),
+        ),
       ],
       child: CulDeSacChatApp(),
     ),
@@ -51,7 +56,12 @@ class CulDeSacChatApp extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.active) {
             final User? user = snapshot.data;
-            return user == null ? LoginScreen() : ChatScreen();
+            if (user != null) {
+              // Initialize user data when authenticated
+              context.read<UserRepository>().getUserProfile(user.uid);
+              return ChatScreen();
+            }
+            return LoginScreen();
           }
           return Scaffold(body: Center(child: CircularProgressIndicator()));
         },
@@ -59,6 +69,7 @@ class CulDeSacChatApp extends StatelessWidget {
       routes: {
         '/login': (context) => LoginScreen(),
         '/chat': (context) => ChatScreen(),
+        '/profile': (context) => ProfileEditScreen(),
       },
     );
   }

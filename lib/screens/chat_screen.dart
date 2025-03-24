@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../constants/app_constants.dart';
 import '../widgets/chat_message_list.dart';
 import '../widgets/message_input.dart';
 import '../models/chat_message.dart';
 import '../services/auth_service.dart';
+import '../services/user_repository.dart';
+import '../services/chat_repository.dart';
+import '../models/user_profile.dart';
 
 class ChatScreen extends StatefulWidget {
   @override
@@ -13,87 +17,149 @@ class ChatScreen extends StatefulWidget {
 
 class ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
-  final List<ChatMessage> _messages = [];
+  final String defaultGroupId = 'general';
+
+  // Store provider references
+  ChatRepository? _chatRepository;
+  Stream<List<ChatMessage>>? _messagesStream;
+  UserProfile? _userProfile;
+
+  @override
+  void initState() {
+    super.initState();
+    // Don't access providers here
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _chatRepository = Provider.of<ChatRepository>(context, listen: false);
+
+    // Initialize message stream if not already initialized
+    if (_messagesStream == null) {
+      _messagesStream = _chatRepository!.getMessages(defaultGroupId);
+
+      // Add a listener to scroll to bottom when new messages arrive
+      // We'll use a debounce mechanism to avoid too many scrolls
+      _messagesStream!.listen((_) {
+        // Scroll to bottom after the UI updates
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
+      });
+
+      _chatRepository!.addListener(_scrollToBottom);
+      _loadUserProfile();
+    }
+  }
+
+  Future<void> _loadUserProfile() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      _userProfile = await Provider.of<UserRepository>(
+        context,
+        listen: false,
+      ).getUserProfile(currentUser.uid);
+      if (mounted) setState(() {});
+    }
+  }
+
+  @override
+  void dispose() {
+    // Use stored reference instead of accessing context
+    if (_chatRepository != null) {
+      _chatRepository!.removeListener(_scrollToBottom);
+    }
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
 
   void _handleSubmitted(String text) {
     if (text.trim().isEmpty) return;
 
-    setState(() {
-      _messages.add(
-        ChatMessage(
-          text: text,
-          senderId: 'test_user',
-          groupId: 'test_group',
-          isFromCurrentUser: true,
-          senderName: "[Test User]",
-        ),
+    final currentUser =
+        Provider.of<AuthService>(context, listen: false).getCurrentUser();
+    if (currentUser == null) return;
+
+    // Reload the user profile before sending a message
+    _loadUserProfile().then((_) {
+      final message = ChatMessage(
+        text: text,
+        senderId: currentUser.uid,
+        groupId: defaultGroupId,
+        isFromCurrentUser: true,
+        senderName: _userProfile?.displayName ?? "[User]",
       );
-    });
 
-    // Scroll to the bottom after the UI updates
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          0.0, // Since we're using reverse: true, 0.0 is the bottom
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
+      // Send to Firestore
+      Provider.of<ChatRepository>(context, listen: false).sendMessage(message);
 
-  void _addMockMessage() {
-    setState(() {
-      _messages.add(
-        ChatMessage(
-          text: "This is a sample message from another user ;)",
-          senderId: 'other_user',
-          groupId: 'test_group',
-          isFromCurrentUser: false,
-          senderName: "[Group Member]",
-        ),
-      );
-    });
-
-    // Scroll to the bottom after the UI updates
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          0.0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
-
-  void _clearAllMessages() {
-    setState(() {
-      _messages.clear();
+      // Scroll to bottom after sending
+      _scrollToBottom();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final userProfile = _userProfile;
+
     return Scaffold(
       drawer: Drawer(
         width: MediaQuery.of(context).size.width * 0.33,
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
+            UserAccountsDrawerHeader(
+              accountName: Text(userProfile?.displayName ?? "User"),
+              accountEmail: Text(userProfile?.email ?? ""),
+              currentAccountPicture: CircleAvatar(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                backgroundImage:
+                    userProfile?.avatarUrl != null
+                        ? NetworkImage(userProfile!.avatarUrl!)
+                        : null,
+                child:
+                    userProfile == null || userProfile.avatarUrl == null
+                        ? Text(
+                          userProfile?.displayName
+                                  .substring(0, 1)
+                                  .toUpperCase() ??
+                              "U",
+                          style: TextStyle(fontSize: 24, color: Colors.white),
+                        )
+                        : null,
+              ),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.inversePrimary,
               ),
-              child: Text(
-                AppConstants.appTitle,
-                style: TextStyle(color: Color(0xFF222222), fontSize: 24),
-              ),
             ),
             ListTile(
+              leading: Icon(Icons.person),
+              title: Text('Edit Profile'),
+              onTap: () {
+                Navigator.pop(context); // Close drawer
+                Navigator.pushNamed(context, '/profile');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.logout),
               title: Text('Logout'),
               onTap: () async {
-                await context.read<AuthService>().signOut();
+                Navigator.pop(context); // Close drawer first
+                await Provider.of<AuthService>(
+                  context,
+                  listen: false,
+                ).signOut();
                 if (mounted) {
                   Navigator.pushReplacementNamed(context, '/login');
                 }
@@ -114,20 +180,7 @@ class ChatScreenState extends State<ChatScreen> {
           ),
         ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-          // Chat icon for adding mock messages
-          IconButton(
-            icon: Icon(Icons.chat, color: Color(0xFF222222)),
-            onPressed: _addMockMessage,
-            tooltip: 'Add mock message',
-          ),
-          // Trash can icon for debugging
-          IconButton(
-            icon: Icon(Icons.delete, color: Color(0xFF222222)),
-            onPressed: _clearAllMessages,
-            tooltip: 'Clear all messages',
-          ),
-        ],
+        actions: [],
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(1.0),
           child: Container(color: Colors.black, height: 1.0),
@@ -136,9 +189,25 @@ class ChatScreenState extends State<ChatScreen> {
       body: Column(
         children: <Widget>[
           Expanded(
-            child: ChatMessageList(
-              messages: _messages,
-              scrollController: _scrollController,
+            child: StreamBuilder<List<ChatMessage>>(
+              stream: _messagesStream,
+              builder: (context, snapshot) {
+                if (_messagesStream == null ||
+                    snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error loading messages'));
+                }
+
+                final messages = snapshot.data ?? [];
+
+                return ChatMessageList(
+                  messages: messages,
+                  scrollController: _scrollController,
+                );
+              },
             ),
           ),
           MessageInput(onSubmitted: _handleSubmitted),
