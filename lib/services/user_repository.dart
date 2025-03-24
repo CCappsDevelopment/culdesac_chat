@@ -1,11 +1,16 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user_profile.dart';
+import '../services/storage_service.dart';
 
 class UserRepository extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final StorageService _storageService = StorageService();
   UserProfile? _currentUserProfile;
   final Map<String, UserProfile> _userProfileCache = {};
 
@@ -16,36 +21,31 @@ class UserRepository extends ChangeNotifier {
     final User? user = _auth.currentUser;
     if (user != null) {
       await getUserProfile(user.uid);
+      await ensureUserHasProfileImage();
     }
   }
 
   // Get user profile from Firestore with caching
   Future<UserProfile?> getUserProfile(String uid) async {
-    // Clear cache if this is the current user to ensure we get fresh data
-    if (_auth.currentUser?.uid == uid) {
-      _userProfileCache.remove(uid);
-    }
-
-    // Check cache first
-    if (_userProfileCache.containsKey(uid)) {
-      // If this is the current user, update the current profile
-      if (_auth.currentUser?.uid == uid) {
-        _currentUserProfile = _userProfileCache[uid];
-        notifyListeners();
-      }
-      return _userProfileCache[uid];
-    }
-
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
 
       if (doc.exists) {
-        final profile = UserProfile.fromMap(doc.data()!, doc.id);
+        UserProfile profile = UserProfile.fromMap(doc.data()!, doc.id);
 
-        // Cache the profile
+        // If no avatar URL, try to get from storage
+        if (profile.avatarUrl == null || profile.avatarUrl!.isEmpty) {
+          final imageUrl = await _storageService.getProfileImageUrl(uid);
+          // Update profile with the found image URL
+          profile = profile.copyWith(avatarUrl: imageUrl);
+          // Update Firestore
+          await _firestore.collection('users').doc(uid).update({
+            'avatarUrl': imageUrl,
+          });
+        }
+
         _userProfileCache[uid] = profile;
 
-        // If this is the current user, update the current profile
         if (_auth.currentUser?.uid == uid) {
           _currentUserProfile = profile;
           notifyListeners();
@@ -53,7 +53,7 @@ class UserRepository extends ChangeNotifier {
 
         return profile;
       } else {
-        // If user doesn't exist in Firestore yet, create a new profile
+        // Create new profile if doesn't exist
         final User? user = _auth.currentUser;
         if (user != null && user.uid == uid) {
           return await createUserProfile(user);
@@ -126,6 +126,61 @@ class UserRepository extends ChangeNotifier {
       }
     } catch (e) {
       print('Error updating user profile: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateProfileImageWeb(Uint8List bytes, String fileName) async {
+    try {
+      final User? user = _auth.currentUser;
+      if (user != null && _currentUserProfile != null) {
+        // Upload image to Firebase Storage
+        final imageUrl = await _storageService.uploadProfileImageWeb(bytes);
+
+        if (imageUrl != null) {
+          // Update Firestore with the new image URL
+          await updateUserProfile(avatarUrl: imageUrl);
+        }
+      }
+    } catch (e) {
+      print('Error updating profile image: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> ensureUserHasProfileImage() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      // Check if user already has a profile image
+      await _storage
+          .ref()
+          .child('profile_images/${user.uid}.jpg')
+          .getDownloadURL();
+    } catch (e) {
+      // User doesn't have a profile image, use the default one
+      final defaultImageUrl = await _storageService.getProfileImageUrl(
+        'default',
+      );
+      await updateUserProfile(avatarUrl: defaultImageUrl);
+    }
+  }
+
+  Future<void> updateProfileImage(File imageFile) async {
+    try {
+      final User? user = _auth.currentUser;
+      if (user != null && _currentUserProfile != null) {
+        // Upload image to Firebase Storage
+        final imageUrl = await _storageService.uploadProfileImage(imageFile);
+
+        if (imageUrl != null) {
+          // Update Firestore with the new image URL
+          await updateUserProfile(avatarUrl: imageUrl);
+        }
+      }
+    } catch (e) {
+      print('Error updating profile image: $e');
       rethrow;
     }
   }

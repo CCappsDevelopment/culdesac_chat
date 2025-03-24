@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/user_repository.dart';
 import '../models/user_profile.dart';
 
@@ -14,6 +17,8 @@ class ProfileEditScreenState extends State<ProfileEditScreen> {
   late TextEditingController _displayNameController;
   bool _isLoading = false;
   UserProfile? _userProfile;
+  File? _imageFile;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -44,6 +49,32 @@ class ProfileEditScreenState extends State<ProfileEditScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 75,
+    );
+
+    if (pickedFile != null) {
+      if (kIsWeb) {
+        // For web, we need to handle XFile differently
+        final bytes = await pickedFile.readAsBytes();
+        await context.read<UserRepository>().updateProfileImageWeb(
+          bytes,
+          pickedFile.name,
+        );
+      } else {
+        // For mobile platforms
+        setState(() {
+          _imageFile = File(pickedFile.path);
+        });
+        await context.read<UserRepository>().updateProfileImage(_imageFile!);
+      }
+    }
+  }
+
   Future<void> _saveProfile() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -51,11 +82,17 @@ class ProfileEditScreenState extends State<ProfileEditScreen> {
       });
 
       try {
+        // Update display name
         await context.read<UserRepository>().updateUserProfile(
           displayName: _displayNameController.text,
         );
 
-        // Update local cache after successful save
+        // Update profile image if selected
+        if (_imageFile != null) {
+          await context.read<UserRepository>().updateProfileImage(_imageFile!);
+        }
+
+        // Update local cache
         await _loadUserProfile();
 
         if (mounted) {
@@ -82,7 +119,6 @@ class ProfileEditScreenState extends State<ProfileEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Use the cached user profile instead of watching
     final userProfile = _userProfile;
 
     return Scaffold(
@@ -96,25 +132,53 @@ class ProfileEditScreenState extends State<ProfileEditScreen> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        backgroundImage:
-                            userProfile.avatarUrl != null
-                                ? NetworkImage(userProfile.avatarUrl!)
-                                : null,
-                        child:
-                            userProfile.avatarUrl == null
-                                ? Text(
-                                  userProfile.displayName
-                                      .substring(0, 1)
-                                      .toUpperCase(),
-                                  style: TextStyle(
-                                    fontSize: 40,
-                                    color: Colors.white,
-                                  ),
-                                )
-                                : null,
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.primary,
+                              backgroundImage:
+                                  _imageFile != null
+                                      ? FileImage(_imageFile!)
+                                      : (userProfile.avatarUrl != null
+                                          ? NetworkImage(userProfile.avatarUrl!)
+                                              as ImageProvider
+                                          : null),
+                              child:
+                                  (userProfile.avatarUrl == null &&
+                                          _imageFile == null)
+                                      ? Text(
+                                        userProfile.displayName
+                                            .substring(0, 1)
+                                            .toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 40,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                      : null,
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                                padding: EdgeInsets.all(4),
+                                child: Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       SizedBox(height: 16),
                       TextFormField(

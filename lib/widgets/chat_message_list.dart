@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/chat_message.dart';
 import '../models/message_status.dart';
 import '../models/user_profile.dart';
+import '../widgets/user_avatar.dart';
 import '../services/user_repository.dart';
 
 class ChatMessageList extends StatelessWidget {
@@ -202,44 +203,8 @@ class ChatMessageList extends StatelessWidget {
       ).getUserProfile(message.senderId),
       builder: (context, snapshot) {
         final profile = snapshot.data;
-        final avatarUrl = profile?.avatarUrl;
 
-        // Use the latest display name from the profile if available
-        final displayName = profile?.displayName ?? message.senderName;
-
-        return Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color:
-                message.isFromCurrentUser
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.secondary,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.black, width: 2.0),
-            image:
-                avatarUrl != null
-                    ? DecorationImage(
-                      image: NetworkImage(avatarUrl),
-                      fit: BoxFit.cover,
-                    )
-                    : null,
-          ),
-          child:
-              avatarUrl == null
-                  ? Center(
-                    child: Text(
-                      displayName.isNotEmpty
-                          ? displayName[0].toUpperCase()
-                          : '?',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  )
-                  : null,
-        );
+        return UserAvatar(userProfile: profile, radius: size / 2);
       },
     );
   }

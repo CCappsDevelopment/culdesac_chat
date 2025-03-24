@@ -38,11 +38,19 @@ class ChatScreenState extends State<ChatScreen> {
     // Initialize message stream if not already initialized
     if (_messagesStream == null) {
       _messagesStream = _chatRepository!.getMessages(defaultGroupId);
-      _chatRepository!.addListener(_scrollToBottom);
-    }
 
-    // Always reload the user profile when dependencies change
-    _loadUserProfile();
+      // Add a listener to scroll to bottom when new messages arrive
+      // We'll use a debounce mechanism to avoid too many scrolls
+      _messagesStream!.listen((_) {
+        // Scroll to bottom after the UI updates
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
+      });
+
+      _chatRepository!.addListener(_scrollToBottom);
+      _loadUserProfile();
+    }
   }
 
   Future<void> _loadUserProfile() async {
@@ -69,7 +77,7 @@ class ChatScreenState extends State<ChatScreen> {
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
-        _scrollController.position.minScrollExtent,
+        _scrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
@@ -95,6 +103,9 @@ class ChatScreenState extends State<ChatScreen> {
 
       // Send to Firestore
       Provider.of<ChatRepository>(context, listen: false).sendMessage(message);
+
+      // Scroll to bottom after sending
+      _scrollToBottom();
     });
   }
 

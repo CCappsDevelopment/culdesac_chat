@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'user_repository.dart';
-import 'chat_repository.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -23,6 +22,7 @@ class AuthService {
       // Initialize user data after successful login
       if (credential.user != null) {
         await _userRepository.getUserProfile(credential.user!.uid);
+        await _userRepository.ensureUserHasProfileImage();
       }
 
       return credential;
