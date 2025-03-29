@@ -4,25 +4,41 @@ import '../models/user_profile.dart';
 
 class UserAvatar extends StatelessWidget {
   final UserProfile? userProfile;
-  final double radius;
+  final String? profileUrl;
+  final String? displayName;
+  final double size;
 
-  const UserAvatar({super.key, required this.userProfile, this.radius = 40});
+  /// Create an avatar from a UserProfile object
+  const UserAvatar({Key? key, this.userProfile, this.size = 40})
+    : profileUrl = null,
+      displayName = null,
+      super(key: key);
+
+  /// Create an avatar from individual properties
+  const UserAvatar.fromProps({
+    Key? key,
+    required this.profileUrl,
+    required this.displayName,
+    this.size = 40,
+  }) : userProfile = null,
+       super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Determine which data source to use
+    final String? avatarUrl = userProfile?.avatarUrl ?? profileUrl;
+    final String? name = userProfile?.displayName ?? displayName;
+
     return CircleAvatar(
-      radius: radius,
+      radius: size / 2,
       backgroundColor: Theme.of(context).colorScheme.primary,
-      backgroundImage:
-          userProfile?.avatarUrl != null
-              ? NetworkImage(userProfile!.avatarUrl!)
-              : null,
+      backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
       child:
-          userProfile?.avatarUrl == null
+          avatarUrl == null && name != null && name.isNotEmpty
               ? Text(
-                userProfile?.displayName.substring(0, 1).toUpperCase() ?? "?",
+                name.substring(0, 1).toUpperCase(),
                 style: TextStyle(
-                  fontSize: radius * 0.8,
+                  fontSize: size * 0.4,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),

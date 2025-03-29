@@ -205,16 +205,6 @@ class ProfileEditScreenState extends State<ProfileEditScreen> {
                                 ? CircularProgressIndicator()
                                 : Text('Save Profile'),
                       ),
-                      // Future feature: Avatar upload button
-                      SizedBox(height: 16),
-                      OutlinedButton.icon(
-                        icon: Icon(Icons.image),
-                        label: Text('Change Avatar (Coming Soon)'),
-                        onPressed: null, // Disabled for now
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: Size(double.infinity, 50),
-                        ),
-                      ),
                     ],
                   ),
                 ),

@@ -9,7 +9,7 @@ import '../models/user_profile.dart';
 import '../widgets/user_avatar.dart';
 import '../services/user_repository.dart';
 
-class ChatMessageList extends StatelessWidget {
+class ChatMessageList extends StatefulWidget {
   final List<ChatMessage> messages;
   final ScrollController scrollController;
 
@@ -18,6 +18,42 @@ class ChatMessageList extends StatelessWidget {
     required this.messages,
     required this.scrollController,
   });
+
+  @override
+  State<ChatMessageList> createState() => _ChatMessageListState();
+}
+
+class _ChatMessageListState extends State<ChatMessageList> {
+  @override
+  void initState() {
+    super.initState();
+    // Schedule a scroll to bottom after first layout
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
+  }
+
+  @override
+  void didUpdateWidget(ChatMessageList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Scroll to bottom when messages change
+    if (widget.messages.length != oldWidget.messages.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
+    }
+  }
+
+  void _scrollToBottom() {
+    if (widget.messages.isEmpty || !widget.scrollController.hasClients) return;
+
+    widget.scrollController.animateTo(
+      widget.scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,19 +68,19 @@ class ChatMessageList extends StatelessWidget {
         },
       ),
       child: Scrollbar(
-        controller: scrollController,
+        controller: widget.scrollController,
         thumbVisibility: false,
         child: ListView.builder(
-          controller: scrollController,
+          controller: widget.scrollController,
           reverse: false,
           padding: const EdgeInsets.all(8.0),
-          itemCount: messages.length,
+          itemCount: widget.messages.length,
           physics: BouncingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
           ),
           itemBuilder: (context, index) {
             // Get the message
-            final message = messages[index];
+            final message = widget.messages[index];
             // Format the timestamp with contextual date information
             final formattedTime = _getFormattedTimestamp(message.timestamp);
             // Calculate avatar size based on device type
@@ -204,7 +240,7 @@ class ChatMessageList extends StatelessWidget {
       builder: (context, snapshot) {
         final profile = snapshot.data;
 
-        return UserAvatar(userProfile: profile, radius: size / 2);
+        return UserAvatar(userProfile: profile, size: size);
       },
     );
   }
