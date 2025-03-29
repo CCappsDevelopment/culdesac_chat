@@ -13,7 +13,7 @@ class ChatMessage {
     required this.text,
     required this.senderId,
     required this.groupId,
-    this.senderName = "[Test User]",
+    this.senderName = "[User]",
     DateTime? timestamp,
     this.status = MessageStatus.sent,
     this.isFromCurrentUser = true,

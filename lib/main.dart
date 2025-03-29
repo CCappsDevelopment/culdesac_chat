@@ -9,9 +9,12 @@ import 'constants/app_constants.dart';
 import 'screens/chat_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/profile_edit_screen.dart';
+import 'screens/create_group_screen.dart';
+import 'screens/group_settings_screen.dart';
 import 'services/chat_repository.dart';
 import 'services/auth_service.dart';
 import 'services/user_repository.dart';
+import 'services/group_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,12 +31,14 @@ void main() async {
   }
 
   final userRepository = UserRepository();
+  final groupRepository = GroupRepository();
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => ChatRepository()),
         ChangeNotifierProvider(create: (context) => userRepository),
+        ChangeNotifierProvider(create: (context) => groupRepository),
         Provider<AuthService>(
           create: (_) => AuthService(userRepository: userRepository),
         ),
@@ -59,6 +64,8 @@ class CulDeSacChatApp extends StatelessWidget {
             if (user != null) {
               // Initialize user data when authenticated
               context.read<UserRepository>().getUserProfile(user.uid);
+              // Initialize general group
+              context.read<GroupRepository>().initializeGeneralGroup();
               return ChatScreen();
             }
             return LoginScreen();
@@ -70,6 +77,7 @@ class CulDeSacChatApp extends StatelessWidget {
         '/login': (context) => LoginScreen(),
         '/chat': (context) => ChatScreen(),
         '/profile': (context) => ProfileEditScreen(),
+        '/create_group': (context) => CreateGroupScreen(),
       },
     );
   }
