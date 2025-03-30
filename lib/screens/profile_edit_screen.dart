@@ -206,15 +206,48 @@ class ProfileEditScreenState extends State<ProfileEditScreen> {
                         },
                       ),
                       SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: _isLoading ? null : _saveProfile,
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: Size(double.infinity, 50),
+                      Container(
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black,
+                              offset: Offset(4, 4),
+                              blurRadius: 0,
+                              spreadRadius: 0,
+                            ),
+                          ],
                         ),
-                        child:
-                            _isLoading
-                                ? CircularProgressIndicator()
-                                : Text('Save Profile'),
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _saveProfile,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero,
+                              side: BorderSide(color: Colors.black, width: 2.0),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 16.0),
+                            elevation: 0,
+                            minimumSize: Size(double.infinity, 50),
+                            disabledBackgroundColor: Colors.grey,
+                          ).copyWith(
+                            overlayColor:
+                                WidgetStateProperty.resolveWith<Color?>((
+                                  Set<WidgetState> states,
+                                ) {
+                                  if (states.contains(WidgetState.pressed)) {
+                                    return Theme.of(context).colorScheme.primary
+                                        .withValues(alpha: 0.8);
+                                  }
+                                  return null;
+                                }),
+                          ),
+                          child:
+                              _isLoading
+                                  ? CircularProgressIndicator()
+                                  : Text('Save Profile'),
+                        ),
                       ),
                     ],
                   ),
