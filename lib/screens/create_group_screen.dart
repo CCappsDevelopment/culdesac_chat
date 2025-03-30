@@ -25,23 +25,30 @@ class CreateGroupScreenState extends State<CreateGroupScreen> {
       _isSubmitting = true;
     });
 
+    // Capture necessary references before async operations
+    final groupRepository = Provider.of<GroupRepository>(
+      context,
+      listen: false,
+    );
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     try {
-      await Provider.of<GroupRepository>(
-        context,
-        listen: false,
-      ).createGroup(_nameController.text.trim());
+      await groupRepository.createGroup(_nameController.text.trim());
 
       // Check for errors after submission
-      final error = Provider.of<GroupRepository>(context, listen: false).error;
+      final error = groupRepository.error;
+
+      if (!mounted) return;
 
       if (error != null) {
-        // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(
+        // Show error message using captured reference
+        scaffoldMessenger.showSnackBar(
           SnackBar(content: Text(error), backgroundColor: Colors.red),
         );
       } else {
-        // Success - navigate back to the previous screen
-        Navigator.pop(context);
+        // Success - navigate back to the previous screen using captured reference
+        navigator.pop();
       }
     } finally {
       if (mounted) {
@@ -131,13 +138,13 @@ class CreateGroupScreenState extends State<CreateGroupScreen> {
                     minimumSize: Size(double.infinity, 50),
                     disabledBackgroundColor: Colors.grey,
                   ).copyWith(
-                    overlayColor: MaterialStateProperty.resolveWith<Color?>((
-                      Set<MaterialState> states,
+                    overlayColor: WidgetStateProperty.resolveWith<Color?>((
+                      Set<WidgetState> states,
                     ) {
-                      if (states.contains(MaterialState.pressed)) {
+                      if (states.contains(WidgetState.pressed)) {
                         return Theme.of(
                           context,
-                        ).colorScheme.primary.withOpacity(0.8);
+                        ).colorScheme.primary.withValues(alpha: 0.8);
                       }
                       return null;
                     }),

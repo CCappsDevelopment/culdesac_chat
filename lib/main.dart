@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 import 'constants/app_constants.dart';
 import 'screens/chat_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
 import 'screens/profile_edit_screen.dart';
 import 'screens/create_group_screen.dart';
 import 'services/chat_repository.dart';
@@ -74,6 +75,7 @@ class CulDeSacChatApp extends StatelessWidget {
       ),
       routes: {
         '/login': (context) => LoginScreen(),
+        '/register': (context) => RegisterScreen(),
         '/chat': (context) => ChatScreen(),
         '/profile': (context) => ProfileEditScreen(),
         '/create_group': (context) => CreateGroupScreen(),

@@ -65,10 +65,15 @@ class GroupSettingsScreenState extends State<GroupSettingsScreen> {
     });
 
     try {
-      final group = await Provider.of<GroupRepository>(
+      // Capture repository before async operation
+      final groupRepository = Provider.of<GroupRepository>(
         context,
         listen: false,
-      ).getGroupById(widget.groupId);
+      );
+
+      final group = await groupRepository.getGroupById(widget.groupId);
+
+      if (!mounted) return;
 
       if (group != null) {
         _group = group;
@@ -86,11 +91,15 @@ class GroupSettingsScreenState extends State<GroupSettingsScreen> {
   Future<void> _loadGroupMembers() async {
     if (_group == null) return;
 
+    // Capture repository before async operation
     final userRepository = Provider.of<UserRepository>(context, listen: false);
+
     final members = <UserProfile>[];
 
     for (final memberId in _group!.memberIds) {
       final member = await userRepository.getUserProfile(memberId);
+      if (!mounted) return;
+
       if (member != null) {
         members.add(member);
       }
@@ -112,23 +121,29 @@ class GroupSettingsScreenState extends State<GroupSettingsScreen> {
         _isLoading = true;
       });
 
-      try {
-        await Provider.of<GroupRepository>(
-          context,
-          listen: false,
-        ).updateGroupName(widget.groupId, newName);
+      // Capture references before async operations
+      final groupRepository = Provider.of<GroupRepository>(
+        context,
+        listen: false,
+      );
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      final navigator = Navigator.of(context);
 
-        final error =
-            Provider.of<GroupRepository>(context, listen: false).error;
+      try {
+        await groupRepository.updateGroupName(widget.groupId, newName);
+
+        if (!mounted) return;
+
+        final error = groupRepository.error;
         if (error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             SnackBar(content: Text(error), backgroundColor: Colors.red),
           );
         } else {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Group updated successfully')));
-          Navigator.pop(context, true); // Return true to indicate update
+          scaffoldMessenger.showSnackBar(
+            SnackBar(content: Text('Group updated successfully')),
+          );
+          navigator.pop(true); // Return true to indicate update
         }
       } finally {
         if (mounted) {
@@ -150,23 +165,34 @@ class GroupSettingsScreenState extends State<GroupSettingsScreen> {
       _isLoading = true;
     });
 
+    // Capture references before async operations
+    final groupRepository = Provider.of<GroupRepository>(
+      context,
+      listen: false,
+    );
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     try {
-      final success = await Provider.of<GroupRepository>(
-        context,
-        listen: false,
-      ).addUserToGroup(widget.groupId, email);
+      final success = await groupRepository.addUserToGroup(
+        widget.groupId,
+        email,
+      );
+
+      if (!mounted) return;
 
       if (success) {
         _emailController.clear();
         await _loadGroup(); // Reload the group to get updated member list
+
+        if (!mounted) return;
+
         setState(() {
           _showAddUser = false;
         });
       } else {
-        final error =
-            Provider.of<GroupRepository>(context, listen: false).error;
+        final error = groupRepository.error;
         if (error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             SnackBar(content: Text(error), backgroundColor: Colors.red),
           );
         }
@@ -181,6 +207,9 @@ class GroupSettingsScreenState extends State<GroupSettingsScreen> {
   }
 
   Future<void> _removeUser(String userId) async {
+    // Capture navigator before async operation
+    //final navigator = Navigator.of(context);
+
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
@@ -202,17 +231,24 @@ class GroupSettingsScreenState extends State<GroupSettingsScreen> {
           ),
     );
 
+    if (!mounted) return;
     if (confirmed != true) return;
 
     setState(() {
       _isLoading = true;
     });
 
+    // Capture repository before async operation
+    final groupRepository = Provider.of<GroupRepository>(
+      context,
+      listen: false,
+    );
+
     try {
-      await Provider.of<GroupRepository>(
-        context,
-        listen: false,
-      ).removeUserFromGroup(widget.groupId, userId);
+      await groupRepository.removeUserFromGroup(widget.groupId, userId);
+
+      if (!mounted) return;
+
       await _loadGroup(); // Reload the group to get updated member list
     } finally {
       if (mounted) {
@@ -224,6 +260,9 @@ class GroupSettingsScreenState extends State<GroupSettingsScreen> {
   }
 
   Future<void> _leaveGroup() async {
+    // Capture navigator before async operation
+    final navigator = Navigator.of(context);
+
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
@@ -245,20 +284,26 @@ class GroupSettingsScreenState extends State<GroupSettingsScreen> {
           ),
     );
 
+    if (!mounted) return;
     if (confirmed != true) return;
 
     setState(() {
       _isLoading = true;
     });
 
+    // Capture repository before async operation
+    final groupRepository = Provider.of<GroupRepository>(
+      context,
+      listen: false,
+    );
+
     try {
-      await Provider.of<GroupRepository>(
-        context,
-        listen: false,
-      ).leaveGroup(widget.groupId);
+      await groupRepository.leaveGroup(widget.groupId);
+
+      if (!mounted) return;
 
       // Return to chat screen with result code to indicate group was left
-      Navigator.of(context).pop('left');
+      navigator.pop('left');
     } finally {
       if (mounted) {
         setState(() {
@@ -269,6 +314,10 @@ class GroupSettingsScreenState extends State<GroupSettingsScreen> {
   }
 
   Future<void> _deleteGroup() async {
+    // Capture references before async operations
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
@@ -296,25 +345,30 @@ class GroupSettingsScreenState extends State<GroupSettingsScreen> {
           ),
     );
 
+    if (!mounted) return;
     if (confirmed != true) return;
 
     setState(() {
       _isLoading = true;
     });
 
+    // Capture repository before async operation
+    final groupRepository = Provider.of<GroupRepository>(
+      context,
+      listen: false,
+    );
+
     try {
-      final success = await Provider.of<GroupRepository>(
-        context,
-        listen: false,
-      ).deleteGroup(widget.groupId);
+      final success = await groupRepository.deleteGroup(widget.groupId);
+
+      if (!mounted) return;
 
       if (success) {
         // Return to chat screen with result code to indicate group was deleted
-        Navigator.of(context).pop('deleted');
+        navigator.pop('deleted');
       } else {
-        final error =
-            Provider.of<GroupRepository>(context, listen: false).error;
-        ScaffoldMessenger.of(context).showSnackBar(
+        final error = groupRepository.error;
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text(error ?? 'Failed to delete group'),
             backgroundColor: Colors.red,
@@ -612,7 +666,7 @@ class GroupSettingsScreenState extends State<GroupSettingsScreen> {
                                             vertical: 16.0,
                                           ),
                                           disabledForegroundColor: Colors.grey
-                                              .withOpacity(0.5),
+                                              .withValues(alpha: 0.5),
                                         ),
                                         child: Text(
                                           'Leave Group',

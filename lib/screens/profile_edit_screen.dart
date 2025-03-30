@@ -29,9 +29,13 @@ class ProfileEditScreenState extends State<ProfileEditScreen> {
   Future<void> _loadUserProfile() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
-      _userProfile = await context.read<UserRepository>().getUserProfile(
-        currentUser.uid,
-      );
+      // Capture the repository before the async operation
+      final userRepository = context.read<UserRepository>();
+
+      _userProfile = await userRepository.getUserProfile(currentUser.uid);
+
+      if (!mounted) return;
+
       if (_userProfile != null) {
         _displayNameController = TextEditingController(
           text: _userProfile!.displayName,
@@ -39,7 +43,7 @@ class ProfileEditScreenState extends State<ProfileEditScreen> {
       } else {
         _displayNameController = TextEditingController();
       }
-      if (mounted) setState(() {});
+      setState(() {});
     }
   }
 
@@ -50,6 +54,9 @@ class ProfileEditScreenState extends State<ProfileEditScreen> {
   }
 
   Future<void> _pickImage() async {
+    // Capture the repository before the async operation
+    final userRepository = context.read<UserRepository>();
+
     final XFile? pickedFile = await _picker.pickImage(
       source: ImageSource.gallery,
       maxWidth: 512,
@@ -57,20 +64,22 @@ class ProfileEditScreenState extends State<ProfileEditScreen> {
       imageQuality: 75,
     );
 
+    if (!mounted) return;
+
     if (pickedFile != null) {
       if (kIsWeb) {
         // For web, we need to handle XFile differently
         final bytes = await pickedFile.readAsBytes();
-        await context.read<UserRepository>().updateProfileImageWeb(
-          bytes,
-          pickedFile.name,
-        );
+
+        if (!mounted) return;
+
+        await userRepository.updateProfileImageWeb(bytes, pickedFile.name);
       } else {
         // For mobile platforms
         setState(() {
           _imageFile = File(pickedFile.path);
         });
-        await context.read<UserRepository>().updateProfileImage(_imageFile!);
+        await userRepository.updateProfileImage(_imageFile!);
       }
     }
   }
@@ -89,7 +98,9 @@ class ProfileEditScreenState extends State<ProfileEditScreen> {
 
         // Update profile image if selected
         if (_imageFile != null) {
-          await context.read<UserRepository>().updateProfileImage(_imageFile!);
+          await _formKey.currentContext!
+              .read<UserRepository>()
+              .updateProfileImage(_imageFile!);
         }
 
         // Update local cache
