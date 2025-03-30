@@ -10,7 +10,6 @@ import 'screens/chat_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/profile_edit_screen.dart';
 import 'screens/create_group_screen.dart';
-import 'screens/group_settings_screen.dart';
 import 'services/chat_repository.dart';
 import 'services/auth_service.dart';
 import 'services/user_repository.dart';

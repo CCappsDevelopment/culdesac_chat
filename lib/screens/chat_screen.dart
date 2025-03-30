@@ -179,9 +179,9 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     // Remove observer when disposing
     WidgetsBinding.instance.removeObserver(this);
 
-    if (_chatRepository != null) {
-      _chatRepository.removeListener(_scrollToBottom);
-    }
+    // Remove listener for scroll to bottom
+    _chatRepository.removeListener(_scrollToBottom);
+
     _scrollController.dispose();
     super.dispose();
   }

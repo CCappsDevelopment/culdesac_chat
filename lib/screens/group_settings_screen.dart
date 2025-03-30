@@ -12,16 +12,16 @@ class GroupSettingsScreen extends StatefulWidget {
   final String groupName;
 
   const GroupSettingsScreen({
-    Key? key,
+    super.key,
     required this.groupId,
     required this.groupName,
-  }) : super(key: key);
+  });
 
   @override
-  _GroupSettingsScreenState createState() => _GroupSettingsScreenState();
+  GroupSettingsScreenState createState() => GroupSettingsScreenState();
 }
 
-class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
+class GroupSettingsScreenState extends State<GroupSettingsScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   final _emailController = TextEditingController();
@@ -195,8 +195,8 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: Text('Remove'),
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: Text('Remove'),
               ),
             ],
           ),
@@ -238,8 +238,8 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: Text('Leave'),
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: Text('Leave'),
               ),
             ],
           ),
@@ -286,11 +286,11 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: Text('Delete'),
                 style: TextButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
                 ),
+                child: Text('Delete'),
               ),
             ],
           ),
@@ -332,7 +332,7 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isNameChanged = _nameController.text != widget.groupName;
+    //final bool isNameChanged = _nameController.text != widget.groupName;
     final bool isCurrentUserCreator = _group?.creatorId == _currentUserId;
     final bool isGeneralGroup = widget.groupId == 'general';
 
@@ -502,86 +502,145 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
                         ),
                       ),
                       Spacer(),
-                      ElevatedButton(
-                        onPressed: _isNameChanged ? _saveChanges : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(0),
-                            side: BorderSide(color: Colors.black, width: 2.0),
-                          ),
-                          padding: EdgeInsets.symmetric(vertical: 16.0),
-                          disabledBackgroundColor: Colors.grey,
-                        ),
-                        child: Text(
-                          'Save Changes',
-                          style: TextStyle(
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 16.0),
-                      // Only show Leave Group button if user is not the creator (or it's the general group which can't be deleted)
-                      if (!isCurrentUserCreator || isGeneralGroup) ...[
-                        OutlinedButton(
-                          onPressed: !isGeneralGroup ? _leaveGroup : null,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.black,
-                            side: BorderSide(color: Colors.black, width: 2.0),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(0),
+                      // Buttons section - rearranged to be side by side
+                      Row(
+                        children: [
+                          // Save Changes Button (left)
+                          Expanded(
+                            child: Container(
+                              margin: EdgeInsets.only(right: 8.0),
+                              decoration: BoxDecoration(
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black,
+                                    offset: Offset(4, 4),
+                                    blurRadius: 0,
+                                    spreadRadius: 0,
+                                  ),
+                                ],
+                              ),
+                              child: ElevatedButton(
+                                onPressed: _isNameChanged ? _saveChanges : null,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.primary,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    side: BorderSide(
+                                      color: Colors.black,
+                                      width: 2.0,
+                                    ),
+                                  ),
+                                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                                  elevation: 0,
+                                  disabledBackgroundColor: Colors.grey,
+                                ),
+                                child: Text(
+                                  'Save Changes',
+                                  style: TextStyle(
+                                    fontSize: 16.0,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ),
-                            padding: EdgeInsets.symmetric(vertical: 16.0),
-                            disabledForegroundColor: Colors.grey.withOpacity(
-                              0.5,
-                            ),
                           ),
-                          child: Text(
-                            'Leave Group',
-                            style: TextStyle(
-                              fontSize: 16.0,
-                              fontWeight: FontWeight.bold,
+
+                          // Leave/Delete Group Button (right)
+                          Expanded(
+                            child: Container(
+                              margin: EdgeInsets.only(left: 8.0),
+                              decoration: BoxDecoration(
+                                boxShadow:
+                                    isGeneralGroup
+                                        ? null
+                                        : [
+                                          BoxShadow(
+                                            color: Colors.black,
+                                            offset: Offset(4, 4),
+                                            blurRadius: 0,
+                                            spreadRadius: 0,
+                                          ),
+                                        ],
+                              ),
+                              child:
+                                  isCurrentUserCreator && !isGeneralGroup
+                                      ? // For creators, show delete group button
+                                      ElevatedButton(
+                                        onPressed: _deleteGroup,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.zero,
+                                            side: BorderSide(
+                                              color: Colors.black,
+                                              width: 2.0,
+                                            ),
+                                          ),
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 16.0,
+                                          ),
+                                          elevation: 0,
+                                        ),
+                                        child: Text(
+                                          'DELETE Group',
+                                          style: TextStyle(
+                                            fontSize: 16.0,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      )
+                                      : // For non-creators or in general group
+                                      OutlinedButton(
+                                        onPressed:
+                                            !isGeneralGroup
+                                                ? _leaveGroup
+                                                : null,
+                                        style: OutlinedButton.styleFrom(
+                                          backgroundColor: Colors.white,
+                                          foregroundColor: Colors.black,
+                                          side: BorderSide(
+                                            color: Colors.black,
+                                            width: 2.0,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.zero,
+                                          ),
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 16.0,
+                                          ),
+                                          disabledForegroundColor: Colors.grey
+                                              .withOpacity(0.5),
+                                        ),
+                                        child: Text(
+                                          'Leave Group',
+                                          style: TextStyle(
+                                            fontSize: 16.0,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
                             ),
-                          ),
-                        ),
-                        if (isCurrentUserCreator && isGeneralGroup) ...[
-                          SizedBox(height: 8.0),
-                          Text(
-                            'Note: You cannot leave the general group.',
-                            style: TextStyle(
-                              fontSize: 12.0,
-                              fontStyle: FontStyle.italic,
-                              color: Colors.grey[600],
-                            ),
-                            textAlign: TextAlign.center,
                           ),
                         ],
+                      ),
+
+                      // Note for general group or creator status
+                      if (isCurrentUserCreator && isGeneralGroup) ...[
+                        SizedBox(height: 8.0),
+                        Text(
+                          'Note: You cannot leave the general group.',
+                          style: TextStyle(
+                            fontSize: 12.0,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey[600],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ],
                       if (isCurrentUserCreator && !isGeneralGroup) ...[
-                        // For creators, show delete group instead of leave group
-                        SizedBox(height: 16.0),
-                        ElevatedButton(
-                          onPressed: _deleteGroup,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(0),
-                              side: BorderSide(color: Colors.black, width: 2.0),
-                            ),
-                            padding: EdgeInsets.symmetric(vertical: 16.0),
-                          ),
-                          child: Text(
-                            'DELETE Group',
-                            style: TextStyle(
-                              fontSize: 16.0,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
                         SizedBox(height: 8.0),
                         Text(
                           'Note: As the creator, you must delete this group rather than leave it.',

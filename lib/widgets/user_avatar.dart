@@ -9,19 +9,17 @@ class UserAvatar extends StatelessWidget {
   final double size;
 
   /// Create an avatar from a UserProfile object
-  const UserAvatar({Key? key, this.userProfile, this.size = 40})
+  const UserAvatar({super.key, this.userProfile, this.size = 40})
     : profileUrl = null,
-      displayName = null,
-      super(key: key);
+      displayName = null;
 
   /// Create an avatar from individual properties
   const UserAvatar.fromProps({
-    Key? key,
+    super.key,
     required this.profileUrl,
     required this.displayName,
     this.size = 40,
-  }) : userProfile = null,
-       super(key: key);
+  }) : userProfile = null;
 
   @override
   Widget build(BuildContext context) {

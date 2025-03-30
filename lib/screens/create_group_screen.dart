@@ -4,10 +4,10 @@ import '../services/group_repository.dart';
 
 class CreateGroupScreen extends StatefulWidget {
   @override
-  _CreateGroupScreenState createState() => _CreateGroupScreenState();
+  CreateGroupScreenState createState() => CreateGroupScreenState();
 }
 
-class _CreateGroupScreenState extends State<CreateGroupScreen> {
+class CreateGroupScreenState extends State<CreateGroupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   bool _isSubmitting = false;
@@ -106,31 +106,57 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                 },
               ),
               SizedBox(height: 24.0),
-              ElevatedButton(
-                onPressed: _isSubmitting ? null : _createGroup,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(0),
-                    side: BorderSide(color: Colors.black, width: 2.0),
-                  ),
-                  padding: EdgeInsets.symmetric(vertical: 16.0),
+              Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black,
+                      offset: Offset(4, 4),
+                      blurRadius: 0,
+                      spreadRadius: 0,
+                    ),
+                  ],
                 ),
-                child:
-                    _isSubmitting
-                        ? CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _createGroup,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                      side: BorderSide(color: Colors.black, width: 2.0),
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 16.0),
+                    elevation: 0,
+                    minimumSize: Size(double.infinity, 50),
+                    disabledBackgroundColor: Colors.grey,
+                  ).copyWith(
+                    overlayColor: MaterialStateProperty.resolveWith<Color?>((
+                      Set<MaterialState> states,
+                    ) {
+                      if (states.contains(MaterialState.pressed)) {
+                        return Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.8);
+                      }
+                      return null;
+                    }),
+                  ),
+                  child:
+                      _isSubmitting
+                          ? CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          )
+                          : Text(
+                            'Create',
+                            style: TextStyle(
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        )
-                        : Text(
-                          'Create',
-                          style: TextStyle(
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                ),
               ),
             ],
           ),
