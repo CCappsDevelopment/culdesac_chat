@@ -234,7 +234,7 @@ class GroupRepository extends ChangeNotifier {
 
       // If the general group document doesn't exist or doesn't have memberIds field
       if (!generalGroupDoc.exists ||
-          !(generalGroupDoc.data()?['memberIds'] is List)) {
+          generalGroupDoc.data()?['memberIds'] is! List) {
         // Create or update the general group
         await generalGroupRef.set({
           'name': 'General',

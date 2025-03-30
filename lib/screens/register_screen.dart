@@ -1,63 +1,99 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
-import '../screens/chat_screen.dart';
 import 'package:provider/provider.dart';
+import '../services/auth_service.dart';
+import 'login_screen.dart';
 
-class LoginScreen extends StatefulWidget {
+class RegisterScreen extends StatefulWidget {
   @override
-  LoginScreenState createState() => LoginScreenState();
+  RegisterScreenState createState() => RegisterScreenState();
 }
 
-class LoginScreenState extends State<LoginScreen> {
+class RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _displayNameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
     _emailController.dispose();
+    _displayNameController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _signIn() async {
+  Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Check if passwords match
+    if (_passwordController.text != _confirmPasswordController.text) {
+      setState(() {
+        _errorMessage = "Entered passwords do not match.";
+      });
+      return;
+    }
+
+    // Capture ScaffoldMessenger before any async operations
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
-    // Capture the navigator before any async operations
-    final navigator = Navigator.of(context);
-    final authService = context.read<AuthService>();
-
     try {
-      final result = await authService.signInWithEmailAndPassword(
+      // Check if email already exists
+      final emailExists = await context.read<AuthService>().checkIfEmailExists(
         _emailController.text,
-        _passwordController.text,
       );
 
       if (!mounted) return;
 
+      if (emailExists) {
+        setState(() {
+          _errorMessage =
+              "The input email address is already taken, please sign in or enter a new email.";
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Create the user account
+      final result = await context
+          .read<AuthService>()
+          .createUserWithEmailAndPassword(
+            _emailController.text,
+            _passwordController.text,
+            _displayNameController.text,
+          );
+
+      if (!mounted) return;
+
       if (result != null && result.user != null) {
-        // Successfully signed in
-        navigator.pushReplacement(
-          MaterialPageRoute(builder: (context) => ChatScreen()),
+        // Successfully registered
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Account created successfully')),
+        );
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => LoginScreen()),
         );
       } else {
-        // Authentication error
+        // Registration error
         setState(() {
-          _errorMessage = 'Invalid email or password';
+          _errorMessage = 'Failed to create account';
           _isLoading = false;
         });
       }
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'An unexpected error occurred';
+        _errorMessage = e.toString();
         _isLoading = false;
       });
     }
@@ -66,6 +102,7 @@ class LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: Text('Create Account')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Center(
@@ -85,7 +122,17 @@ class LoginScreenState extends State<LoginScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  SizedBox(height: 48.0),
+                  SizedBox(height: 24.0),
+                  Text(
+                    'Register a new account',
+                    style: TextStyle(
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 24.0),
+                  // Email field
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -106,10 +153,14 @@ class LoginScreenState extends State<LoginScreen> {
                           width: 2.0,
                         ),
                       ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(0),
+                        borderSide: BorderSide(color: Colors.red, width: 2.0),
+                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
+                        return 'Please enter an email';
                       }
                       final emailRegex = RegExp(
                         r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
@@ -121,9 +172,43 @@ class LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                   SizedBox(height: 16.0),
+                  // Display name field
+                  TextFormField(
+                    controller: _displayNameController,
+                    decoration: InputDecoration(
+                      labelText: 'Display Name',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(0),
+                        borderSide: BorderSide(color: Colors.black, width: 2.0),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(0),
+                        borderSide: BorderSide(color: Colors.black, width: 2.0),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(0),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 2.0,
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(0),
+                        borderSide: BorderSide(color: Colors.red, width: 2.0),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a display name';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 16.0),
+                  // Password field
                   TextFormField(
                     controller: _passwordController,
-                    obscureText: true,
+                    obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       labelText: 'Password',
                       border: OutlineInputBorder(
@@ -141,13 +226,75 @@ class LoginScreenState extends State<LoginScreen> {
                           width: 2.0,
                         ),
                       ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(0),
+                        borderSide: BorderSide(color: Colors.red, width: 2.0),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
+                        return 'Please enter a password';
                       }
                       if (value.length < 6) {
                         return 'Password must be at least 6 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 16.0),
+                  // Confirm password field
+                  TextFormField(
+                    controller: _confirmPasswordController,
+                    obscureText: _obscureConfirmPassword,
+                    decoration: InputDecoration(
+                      labelText: 'Confirm Password',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(0),
+                        borderSide: BorderSide(color: Colors.black, width: 2.0),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(0),
+                        borderSide: BorderSide(color: Colors.black, width: 2.0),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(0),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 2.0,
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(0),
+                        borderSide: BorderSide(color: Colors.red, width: 2.0),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirmPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureConfirmPassword = !_obscureConfirmPassword;
+                          });
+                        },
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please confirm your password';
                       }
                       return null;
                     },
@@ -161,6 +308,7 @@ class LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                   SizedBox(height: 24.0),
+                  // Submit button
                   Container(
                     decoration: BoxDecoration(
                       boxShadow: [
@@ -173,7 +321,7 @@ class LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     child: ElevatedButton(
-                      onPressed: _isLoading ? null : _signIn,
+                      onPressed: _isLoading ? null : _register,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
@@ -205,7 +353,7 @@ class LoginScreenState extends State<LoginScreen> {
                                 ),
                               )
                               : Text(
-                                'Sign In',
+                                'Create Account',
                                 style: TextStyle(
                                   fontSize: 16.0,
                                   fontWeight: FontWeight.bold,
@@ -217,13 +365,12 @@ class LoginScreenState extends State<LoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text("Don't have an account?"),
+                      Text('Already have an account?'),
                       TextButton(
                         onPressed: () {
-                          // Navigate to registration
-                          Navigator.pushNamed(context, '/register');
+                          Navigator.pop(context);
                         },
-                        child: Text('Register'),
+                        child: Text('Sign In'),
                       ),
                     ],
                   ),

@@ -12,16 +12,16 @@ class GroupSettingsScreen extends StatefulWidget {
   final String groupName;
 
   const GroupSettingsScreen({
-    Key? key,
+    super.key,
     required this.groupId,
     required this.groupName,
-  }) : super(key: key);
+  });
 
   @override
-  _GroupSettingsScreenState createState() => _GroupSettingsScreenState();
+  GroupSettingsScreenState createState() => GroupSettingsScreenState();
 }
 
-class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
+class GroupSettingsScreenState extends State<GroupSettingsScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   final _emailController = TextEditingController();
@@ -65,10 +65,15 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
     });
 
     try {
-      final group = await Provider.of<GroupRepository>(
+      // Capture repository before async operation
+      final groupRepository = Provider.of<GroupRepository>(
         context,
         listen: false,
-      ).getGroupById(widget.groupId);
+      );
+
+      final group = await groupRepository.getGroupById(widget.groupId);
+
+      if (!mounted) return;
 
       if (group != null) {
         _group = group;
@@ -86,11 +91,15 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
   Future<void> _loadGroupMembers() async {
     if (_group == null) return;
 
+    // Capture repository before async operation
     final userRepository = Provider.of<UserRepository>(context, listen: false);
+
     final members = <UserProfile>[];
 
     for (final memberId in _group!.memberIds) {
       final member = await userRepository.getUserProfile(memberId);
+      if (!mounted) return;
+
       if (member != null) {
         members.add(member);
       }
@@ -112,23 +121,29 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
         _isLoading = true;
       });
 
-      try {
-        await Provider.of<GroupRepository>(
-          context,
-          listen: false,
-        ).updateGroupName(widget.groupId, newName);
+      // Capture references before async operations
+      final groupRepository = Provider.of<GroupRepository>(
+        context,
+        listen: false,
+      );
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      final navigator = Navigator.of(context);
 
-        final error =
-            Provider.of<GroupRepository>(context, listen: false).error;
+      try {
+        await groupRepository.updateGroupName(widget.groupId, newName);
+
+        if (!mounted) return;
+
+        final error = groupRepository.error;
         if (error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             SnackBar(content: Text(error), backgroundColor: Colors.red),
           );
         } else {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Group updated successfully')));
-          Navigator.pop(context, true); // Return true to indicate update
+          scaffoldMessenger.showSnackBar(
+            SnackBar(content: Text('Group updated successfully')),
+          );
+          navigator.pop(true); // Return true to indicate update
         }
       } finally {
         if (mounted) {
@@ -150,23 +165,34 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
       _isLoading = true;
     });
 
+    // Capture references before async operations
+    final groupRepository = Provider.of<GroupRepository>(
+      context,
+      listen: false,
+    );
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     try {
-      final success = await Provider.of<GroupRepository>(
-        context,
-        listen: false,
-      ).addUserToGroup(widget.groupId, email);
+      final success = await groupRepository.addUserToGroup(
+        widget.groupId,
+        email,
+      );
+
+      if (!mounted) return;
 
       if (success) {
         _emailController.clear();
         await _loadGroup(); // Reload the group to get updated member list
+
+        if (!mounted) return;
+
         setState(() {
           _showAddUser = false;
         });
       } else {
-        final error =
-            Provider.of<GroupRepository>(context, listen: false).error;
+        final error = groupRepository.error;
         if (error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             SnackBar(content: Text(error), backgroundColor: Colors.red),
           );
         }
@@ -181,6 +207,9 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
   }
 
   Future<void> _removeUser(String userId) async {
+    // Capture navigator before async operation
+    //final navigator = Navigator.of(context);
+
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
@@ -195,24 +224,31 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: Text('Remove'),
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: Text('Remove'),
               ),
             ],
           ),
     );
 
+    if (!mounted) return;
     if (confirmed != true) return;
 
     setState(() {
       _isLoading = true;
     });
 
+    // Capture repository before async operation
+    final groupRepository = Provider.of<GroupRepository>(
+      context,
+      listen: false,
+    );
+
     try {
-      await Provider.of<GroupRepository>(
-        context,
-        listen: false,
-      ).removeUserFromGroup(widget.groupId, userId);
+      await groupRepository.removeUserFromGroup(widget.groupId, userId);
+
+      if (!mounted) return;
+
       await _loadGroup(); // Reload the group to get updated member list
     } finally {
       if (mounted) {
@@ -224,6 +260,9 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
   }
 
   Future<void> _leaveGroup() async {
+    // Capture navigator before async operation
+    final navigator = Navigator.of(context);
+
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
@@ -238,27 +277,33 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: Text('Leave'),
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: Text('Leave'),
               ),
             ],
           ),
     );
 
+    if (!mounted) return;
     if (confirmed != true) return;
 
     setState(() {
       _isLoading = true;
     });
 
+    // Capture repository before async operation
+    final groupRepository = Provider.of<GroupRepository>(
+      context,
+      listen: false,
+    );
+
     try {
-      await Provider.of<GroupRepository>(
-        context,
-        listen: false,
-      ).leaveGroup(widget.groupId);
+      await groupRepository.leaveGroup(widget.groupId);
+
+      if (!mounted) return;
 
       // Return to chat screen with result code to indicate group was left
-      Navigator.of(context).pop('left');
+      navigator.pop('left');
     } finally {
       if (mounted) {
         setState(() {
@@ -269,6 +314,10 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
   }
 
   Future<void> _deleteGroup() async {
+    // Capture references before async operations
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
@@ -286,35 +335,40 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: Text('Delete'),
                 style: TextButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
                 ),
+                child: Text('Delete'),
               ),
             ],
           ),
     );
 
+    if (!mounted) return;
     if (confirmed != true) return;
 
     setState(() {
       _isLoading = true;
     });
 
+    // Capture repository before async operation
+    final groupRepository = Provider.of<GroupRepository>(
+      context,
+      listen: false,
+    );
+
     try {
-      final success = await Provider.of<GroupRepository>(
-        context,
-        listen: false,
-      ).deleteGroup(widget.groupId);
+      final success = await groupRepository.deleteGroup(widget.groupId);
+
+      if (!mounted) return;
 
       if (success) {
         // Return to chat screen with result code to indicate group was deleted
-        Navigator.of(context).pop('deleted');
+        navigator.pop('deleted');
       } else {
-        final error =
-            Provider.of<GroupRepository>(context, listen: false).error;
-        ScaffoldMessenger.of(context).showSnackBar(
+        final error = groupRepository.error;
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text(error ?? 'Failed to delete group'),
             backgroundColor: Colors.red,
@@ -332,7 +386,7 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isNameChanged = _nameController.text != widget.groupName;
+    //final bool isNameChanged = _nameController.text != widget.groupName;
     final bool isCurrentUserCreator = _group?.creatorId == _currentUserId;
     final bool isGeneralGroup = widget.groupId == 'general';
 
@@ -502,86 +556,145 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
                         ),
                       ),
                       Spacer(),
-                      ElevatedButton(
-                        onPressed: _isNameChanged ? _saveChanges : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(0),
-                            side: BorderSide(color: Colors.black, width: 2.0),
-                          ),
-                          padding: EdgeInsets.symmetric(vertical: 16.0),
-                          disabledBackgroundColor: Colors.grey,
-                        ),
-                        child: Text(
-                          'Save Changes',
-                          style: TextStyle(
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 16.0),
-                      // Only show Leave Group button if user is not the creator (or it's the general group which can't be deleted)
-                      if (!isCurrentUserCreator || isGeneralGroup) ...[
-                        OutlinedButton(
-                          onPressed: !isGeneralGroup ? _leaveGroup : null,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.black,
-                            side: BorderSide(color: Colors.black, width: 2.0),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(0),
+                      // Buttons section - rearranged to be side by side
+                      Row(
+                        children: [
+                          // Save Changes Button (left)
+                          Expanded(
+                            child: Container(
+                              margin: EdgeInsets.only(right: 8.0),
+                              decoration: BoxDecoration(
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black,
+                                    offset: Offset(4, 4),
+                                    blurRadius: 0,
+                                    spreadRadius: 0,
+                                  ),
+                                ],
+                              ),
+                              child: ElevatedButton(
+                                onPressed: _isNameChanged ? _saveChanges : null,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.primary,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    side: BorderSide(
+                                      color: Colors.black,
+                                      width: 2.0,
+                                    ),
+                                  ),
+                                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                                  elevation: 0,
+                                  disabledBackgroundColor: Colors.grey,
+                                ),
+                                child: Text(
+                                  'Save Changes',
+                                  style: TextStyle(
+                                    fontSize: 16.0,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ),
-                            padding: EdgeInsets.symmetric(vertical: 16.0),
-                            disabledForegroundColor: Colors.grey.withOpacity(
-                              0.5,
-                            ),
                           ),
-                          child: Text(
-                            'Leave Group',
-                            style: TextStyle(
-                              fontSize: 16.0,
-                              fontWeight: FontWeight.bold,
+
+                          // Leave/Delete Group Button (right)
+                          Expanded(
+                            child: Container(
+                              margin: EdgeInsets.only(left: 8.0),
+                              decoration: BoxDecoration(
+                                boxShadow:
+                                    isGeneralGroup
+                                        ? null
+                                        : [
+                                          BoxShadow(
+                                            color: Colors.black,
+                                            offset: Offset(4, 4),
+                                            blurRadius: 0,
+                                            spreadRadius: 0,
+                                          ),
+                                        ],
+                              ),
+                              child:
+                                  isCurrentUserCreator && !isGeneralGroup
+                                      ? // For creators, show delete group button
+                                      ElevatedButton(
+                                        onPressed: _deleteGroup,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.zero,
+                                            side: BorderSide(
+                                              color: Colors.black,
+                                              width: 2.0,
+                                            ),
+                                          ),
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 16.0,
+                                          ),
+                                          elevation: 0,
+                                        ),
+                                        child: Text(
+                                          'DELETE Group',
+                                          style: TextStyle(
+                                            fontSize: 16.0,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      )
+                                      : // For non-creators or in general group
+                                      OutlinedButton(
+                                        onPressed:
+                                            !isGeneralGroup
+                                                ? _leaveGroup
+                                                : null,
+                                        style: OutlinedButton.styleFrom(
+                                          backgroundColor: Colors.white,
+                                          foregroundColor: Colors.black,
+                                          side: BorderSide(
+                                            color: Colors.black,
+                                            width: 2.0,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.zero,
+                                          ),
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 16.0,
+                                          ),
+                                          disabledForegroundColor: Colors.grey
+                                              .withValues(alpha: 0.5),
+                                        ),
+                                        child: Text(
+                                          'Leave Group',
+                                          style: TextStyle(
+                                            fontSize: 16.0,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
                             ),
-                          ),
-                        ),
-                        if (isCurrentUserCreator && isGeneralGroup) ...[
-                          SizedBox(height: 8.0),
-                          Text(
-                            'Note: You cannot leave the general group.',
-                            style: TextStyle(
-                              fontSize: 12.0,
-                              fontStyle: FontStyle.italic,
-                              color: Colors.grey[600],
-                            ),
-                            textAlign: TextAlign.center,
                           ),
                         ],
+                      ),
+
+                      // Note for general group or creator status
+                      if (isCurrentUserCreator && isGeneralGroup) ...[
+                        SizedBox(height: 8.0),
+                        Text(
+                          'Note: You cannot leave the general group.',
+                          style: TextStyle(
+                            fontSize: 12.0,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey[600],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ],
                       if (isCurrentUserCreator && !isGeneralGroup) ...[
-                        // For creators, show delete group instead of leave group
-                        SizedBox(height: 16.0),
-                        ElevatedButton(
-                          onPressed: _deleteGroup,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(0),
-                              side: BorderSide(color: Colors.black, width: 2.0),
-                            ),
-                            padding: EdgeInsets.symmetric(vertical: 16.0),
-                          ),
-                          child: Text(
-                            'DELETE Group',
-                            style: TextStyle(
-                              fontSize: 16.0,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
                         SizedBox(height: 8.0),
                         Text(
                           'Note: As the creator, you must delete this group rather than leave it.',

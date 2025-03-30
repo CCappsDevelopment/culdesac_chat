@@ -179,9 +179,9 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     // Remove observer when disposing
     WidgetsBinding.instance.removeObserver(this);
 
-    if (_chatRepository != null) {
-      _chatRepository.removeListener(_scrollToBottom);
-    }
+    // Remove listener for scroll to bottom
+    _chatRepository.removeListener(_scrollToBottom);
+
     _scrollController.dispose();
     super.dispose();
   }
@@ -212,6 +212,9 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         Provider.of<AuthService>(context, listen: false).getCurrentUser();
     if (currentUser == null) return;
 
+    // Capture the chat repository before the async operation
+    final chatRepository = Provider.of<ChatRepository>(context, listen: false);
+
     // Reload the user profile before sending a message
     _loadUserProfile().then((_) {
       final message = ChatMessage(
@@ -222,8 +225,8 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         senderName: _userProfile?.displayName ?? "[User]",
       );
 
-      // Send to Firestore
-      Provider.of<ChatRepository>(context, listen: false).sendMessage(message);
+      // Use the captured repository instead of accessing through context
+      chatRepository.sendMessage(message);
 
       // Scroll to bottom after sending
       _scrollToBottom();
@@ -416,7 +419,7 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                         selected: isSelected,
                         selectedTileColor: Theme.of(
                           context,
-                        ).colorScheme.primaryContainer.withOpacity(0.3),
+                        ).colorScheme.primaryContainer.withValues(alpha: 0.3),
                         onTap: () => _switchToGroup(group.id, group.name),
                       );
                     },
@@ -437,13 +440,21 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               leading: Icon(Icons.logout),
               title: Text('Logout'),
               onTap: () async {
-                Navigator.pop(context); // Close drawer first
+                // Close drawer first
+                Navigator.pop(context);
+
+                // Capture the navigator before the async operation
+                final navigator = Navigator.of(context);
+
+                // Perform the async operation
                 await Provider.of<AuthService>(
                   context,
                   listen: false,
                 ).signOut();
+
+                // Use the captured navigator instead of accessing through context
                 if (mounted) {
-                  Navigator.pushReplacementNamed(context, '/login');
+                  navigator.pushReplacementNamed('/login');
                 }
               },
             ),

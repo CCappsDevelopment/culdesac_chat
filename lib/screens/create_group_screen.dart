@@ -4,10 +4,10 @@ import '../services/group_repository.dart';
 
 class CreateGroupScreen extends StatefulWidget {
   @override
-  _CreateGroupScreenState createState() => _CreateGroupScreenState();
+  CreateGroupScreenState createState() => CreateGroupScreenState();
 }
 
-class _CreateGroupScreenState extends State<CreateGroupScreen> {
+class CreateGroupScreenState extends State<CreateGroupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   bool _isSubmitting = false;
@@ -25,23 +25,30 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       _isSubmitting = true;
     });
 
+    // Capture necessary references before async operations
+    final groupRepository = Provider.of<GroupRepository>(
+      context,
+      listen: false,
+    );
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     try {
-      await Provider.of<GroupRepository>(
-        context,
-        listen: false,
-      ).createGroup(_nameController.text.trim());
+      await groupRepository.createGroup(_nameController.text.trim());
 
       // Check for errors after submission
-      final error = Provider.of<GroupRepository>(context, listen: false).error;
+      final error = groupRepository.error;
+
+      if (!mounted) return;
 
       if (error != null) {
-        // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(
+        // Show error message using captured reference
+        scaffoldMessenger.showSnackBar(
           SnackBar(content: Text(error), backgroundColor: Colors.red),
         );
       } else {
-        // Success - navigate back to the previous screen
-        Navigator.pop(context);
+        // Success - navigate back to the previous screen using captured reference
+        navigator.pop();
       }
     } finally {
       if (mounted) {
@@ -106,31 +113,57 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                 },
               ),
               SizedBox(height: 24.0),
-              ElevatedButton(
-                onPressed: _isSubmitting ? null : _createGroup,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(0),
-                    side: BorderSide(color: Colors.black, width: 2.0),
-                  ),
-                  padding: EdgeInsets.symmetric(vertical: 16.0),
+              Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black,
+                      offset: Offset(4, 4),
+                      blurRadius: 0,
+                      spreadRadius: 0,
+                    ),
+                  ],
                 ),
-                child:
-                    _isSubmitting
-                        ? CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _createGroup,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                      side: BorderSide(color: Colors.black, width: 2.0),
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 16.0),
+                    elevation: 0,
+                    minimumSize: Size(double.infinity, 50),
+                    disabledBackgroundColor: Colors.grey,
+                  ).copyWith(
+                    overlayColor: WidgetStateProperty.resolveWith<Color?>((
+                      Set<WidgetState> states,
+                    ) {
+                      if (states.contains(WidgetState.pressed)) {
+                        return Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.8);
+                      }
+                      return null;
+                    }),
+                  ),
+                  child:
+                      _isSubmitting
+                          ? CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          )
+                          : Text(
+                            'Create',
+                            style: TextStyle(
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        )
-                        : Text(
-                          'Create',
-                          style: TextStyle(
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                ),
               ),
             ],
           ),
