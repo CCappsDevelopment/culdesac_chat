@@ -258,13 +258,13 @@ class _ChatMessageListState extends State<ChatMessageList> {
 
     // Responsive sizing based on screen width
     if (screenWidth < 360) {
-      return 24.0; // Small phones
+      return 56.0; // Small phones
     } else if (screenWidth < 600) {
-      return 32.0; // Regular phones
+      return 56.0; // Regular phones
     } else if (screenWidth < 900) {
-      return 40.0; // Tablets
+      return 56.0; // Tablets
     } else {
-      return 48.0; // Desktop or large tablets
+      return 56.0; // Desktop or large tablets
     }
   }
 

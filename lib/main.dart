@@ -11,10 +11,12 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/profile_edit_screen.dart';
 import 'screens/create_group_screen.dart';
+import 'screens/theming_screen.dart';
 import 'services/chat_repository.dart';
 import 'services/auth_service.dart';
 import 'services/user_repository.dart';
 import 'services/group_repository.dart';
+import 'services/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,55 +32,120 @@ void main() async {
     FirebaseFirestore.instance.enableNetwork();
   }
 
-  final userRepository = UserRepository();
-  final groupRepository = GroupRepository();
+  runApp(MyApp());
+}
 
-  runApp(
-    MultiProvider(
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => ChatRepository()),
-        ChangeNotifierProvider(create: (context) => userRepository),
-        ChangeNotifierProvider(create: (context) => groupRepository),
-        Provider<AuthService>(
-          create: (_) => AuthService(userRepository: userRepository),
+        ChangeNotifierProvider(create: (_) => ChatRepository()),
+        ChangeNotifierProvider(create: (_) => UserRepository()),
+        ChangeNotifierProvider(create: (_) => GroupRepository()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ProxyProvider<UserRepository, AuthService>(
+          update: (_, userRepo, __) => AuthService(userRepository: userRepo),
         ),
       ],
       child: CulDeSacChatApp(),
-    ),
-  );
+    );
+  }
 }
 
-class CulDeSacChatApp extends StatelessWidget {
+class CulDeSacChatApp extends StatefulWidget {
+  @override
+  CulDeSacChatAppState createState() => CulDeSacChatAppState();
+}
+
+class CulDeSacChatAppState extends State<CulDeSacChatApp> {
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  // One-time initialization for the app
+  Future<void> _initializeApp() async {
+    final userRepository = context.read<UserRepository>();
+    final themeProvider = context.read<ThemeProvider>();
+
+    // Initialize user data
+    await userRepository.initializeUserData();
+
+    // Initialize theme only once
+    if (!themeProvider.isInitialized) {
+      await themeProvider.initializeTheme(userRepository);
+    }
+
+    if (mounted) {
+      setState(() {
+        _initialized = true;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+
     return MaterialApp(
       title: AppConstants.appTitle,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFFFF01F6)),
-      ),
-      home: StreamBuilder<User?>(
-        stream: context.read<AuthService>().authStateChanges,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.active) {
-            final User? user = snapshot.data;
-            if (user != null) {
-              // Initialize user data when authenticated
-              context.read<UserRepository>().getUserProfile(user.uid);
-              // Initialize general group
-              context.read<GroupRepository>().initializeGeneralGroup();
-              return ChatScreen();
-            }
-            return LoginScreen();
-          }
-          return Scaffold(body: Center(child: CircularProgressIndicator()));
-        },
-      ),
+      theme: themeProvider.getTheme(),
+      home:
+          !_initialized
+              ? Scaffold(body: Center(child: CircularProgressIndicator()))
+              : AuthGate(),
       routes: {
         '/login': (context) => LoginScreen(),
         '/register': (context) => RegisterScreen(),
         '/chat': (context) => ChatScreen(),
         '/profile': (context) => ProfileEditScreen(),
         '/create_group': (context) => CreateGroupScreen(),
+        '/themes': (context) => ThemingScreen(),
+      },
+    );
+  }
+}
+
+// Separated auth state handling into a standalone widget
+class AuthGate extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final userRepository = context.read<UserRepository>();
+    final themeProvider = context.read<ThemeProvider>();
+    final groupRepository = context.read<GroupRepository>();
+
+    return StreamBuilder<User?>(
+      stream: context.read<AuthService>().authStateChanges,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.active) {
+          final User? user = snapshot.data;
+
+          if (user != null) {
+            // User is logged in, load their data
+            userRepository.getUserProfile(user.uid).then((profile) {
+              if (profile != null && context.mounted) {
+                // Load the user's theme preference
+                themeProvider.loadThemeFromProfile(profile);
+              }
+            });
+
+            // Initialize general group
+            groupRepository.initializeGeneralGroup();
+
+            // Navigate to chat screen
+            return ChatScreen();
+          }
+
+          // Not logged in, show login screen
+          return LoginScreen();
+        }
+
+        // Waiting for auth state
+        return Scaffold(body: Center(child: CircularProgressIndicator()));
       },
     );
   }

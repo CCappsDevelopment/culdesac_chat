@@ -225,6 +225,30 @@ class UserRepository extends ChangeNotifier {
     }
   }
 
+  // Update user theme seed color
+  Future<void> updateUserTheme(int themeSeedColor) async {
+    try {
+      final User? user = _auth.currentUser;
+      if (user != null && _currentUserProfile != null) {
+        await _firestore.collection('users').doc(user.uid).update({
+          'themeSeedColor': themeSeedColor,
+          'lastActive': FieldValue.serverTimestamp(),
+        });
+
+        // Update both the current profile and the cache
+        _currentUserProfile = _currentUserProfile!.copyWith(
+          themeSeedColor: themeSeedColor,
+        );
+
+        _userProfileCache[user.uid] = _currentUserProfile!;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Error updating user theme: $e');
+      rethrow;
+    }
+  }
+
   // Clear user profile data
   Future<void> clearCurrentUserProfile() async {
     _currentUserProfile = null;
