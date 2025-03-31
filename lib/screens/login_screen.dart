@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/theme_provider.dart';
+import '../services/user_repository.dart';
 import '../screens/chat_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -30,9 +32,11 @@ class LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    // Capture the navigator before any async operations
+    // Capture the navigator and services before any async operations
     final navigator = Navigator.of(context);
     final authService = context.read<AuthService>();
+    final userRepository = context.read<UserRepository>();
+    final themeProvider = context.read<ThemeProvider>();
 
     try {
       final result = await authService.signInWithEmailAndPassword(
@@ -43,10 +47,20 @@ class LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (result != null && result.user != null) {
-        // Successfully signed in
-        navigator.pushReplacement(
-          MaterialPageRoute(builder: (context) => ChatScreen()),
-        );
+        // Get the user profile
+        final profile = await userRepository.getUserProfile(result.user!.uid);
+
+        // Load the user's theme preference
+        if (profile != null) {
+          await themeProvider.loadThemeFromProfile(profile);
+        }
+
+        // Navigate to the chat screen
+        if (mounted) {
+          navigator.pushReplacement(
+            MaterialPageRoute(builder: (context) => ChatScreen()),
+          );
+        }
       } else {
         // Authentication error
         setState(() {

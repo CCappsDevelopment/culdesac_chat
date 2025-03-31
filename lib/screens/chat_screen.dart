@@ -1,19 +1,18 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../constants/app_constants.dart';
-import '../widgets/chat_message_list.dart';
-import '../widgets/message_input.dart';
-import '../models/chat_message.dart';
-import '../models/group.dart';
-import '../services/auth_service.dart';
-import '../services/user_repository.dart';
-import '../services/chat_repository.dart';
-import '../services/group_repository.dart';
-import '../models/user_profile.dart';
-import '../widgets/user_avatar.dart';
+import '/constants/app_constants.dart';
+import '/widgets/chat_message_list.dart';
+import '/widgets/message_input.dart';
+import '/models/chat_message.dart';
+import '/models/group.dart';
+import '/services/auth_service.dart';
+import '/services/user_repository.dart';
+import '/services/chat_repository.dart';
+import '/services/group_repository.dart';
+import '/models/user_profile.dart';
+import '/widgets/user_avatar.dart';
 import 'create_group_screen.dart';
 import 'group_settings_screen.dart';
 
@@ -83,6 +82,9 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   Future<void> _checkAndSetGroup() async {
     final hasGroups = await _groupRepository.hasAnyGroups();
 
+    // Check if the widget is still mounted before calling setState
+    if (!mounted) return;
+
     setState(() {
       _hasGroups = hasGroups;
     });
@@ -107,6 +109,9 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _messageSubscription = null;
 
     if (_currentGroupId == null) {
+      // Check if the widget is still mounted before calling setState
+      if (!mounted) return;
+
       setState(() {
         _messagesStream = null;
       });
@@ -115,6 +120,10 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
     // Important: Set message stream immediately in the UI to allow StreamBuilder to start
     final messageStream = _chatRepository.getMessages(_currentGroupId!);
+
+    // Check if the widget is still mounted before calling setState
+    if (!mounted) return;
+
     setState(() {
       _messagesStream = messageStream;
     });
@@ -123,9 +132,9 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _messageSubscription = messageStream.listen(
       (messages) {
         // Scroll to bottom after messages load and UI updates, but only if we have messages
-        if (messages.isNotEmpty) {
+        if (messages.isNotEmpty && mounted) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scrollToBottom();
+            if (mounted) _scrollToBottom();
           });
         }
       },
@@ -338,6 +347,7 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               currentAccountPicture: UserAvatar(
                 userProfile: userProfile,
                 size: 80,
+                isDrawerAvatar: true,
               ),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.inversePrimary,
@@ -434,6 +444,14 @@ class ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               onTap: () {
                 Navigator.pop(context); // Close drawer
                 Navigator.pushNamed(context, '/profile');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.palette),
+              title: Text('Themes'),
+              onTap: () {
+                Navigator.pop(context); // Close drawer
+                Navigator.pushNamed(context, '/themes');
               },
             ),
             ListTile(
