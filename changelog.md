@@ -1,5 +1,20 @@
 # Changelog
 
+### Update #24: Key Generation and Management Service
+---
+- Change 1: Created KeyService for cryptographic key lifecycle management
+- Reasoning 1: Provides centralized key generation and management for E2EE, including identity keys, signed pre-keys, and one-time pre-keys
+---
+- Change 2: Implemented automatic pre-key rotation and replenishment
+- Reasoning 2: Ensures security through regular key rotation and maintains a sufficient pool of one-time pre-keys
+---
+- Change 3: Added comprehensive test suite for key management functionality
+- Reasoning 3: Validates key generation, rotation, persistence, and proper cleanup of cryptographic material
+---
+###### Files affected:
+- lib/services/key_service.dart (new)
+- test/services/key_service_test.dart (new)
+
 ### Update #23: Secure Storage Implementation
 ---
 - Change 1: Created secure storage abstraction layer for E2EE key management
