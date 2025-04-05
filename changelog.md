@@ -1,5 +1,18 @@
 # Changelog
 
+### Update 1: X3DH Key Agreement Protocol Implementation
+---
+- Change 1: Added X3DH (Extended Triple Diffie-Hellman) protocol implementation
+- Reasoning 1: Implement secure initial key agreement between users before encrypted messaging
+---
+- Change 2: Added one-time pre-key caching and management
+- Reasoning 2: Enable proper one-time pre-key usage for enhanced security
+---
+###### Files affected:
+   - lib/services/x3dh_service.dart
+   - lib/services/key_service.dart
+   - test/services/x3dh_service_test.dart
+
 ### Update #24: Key Generation and Management Service
 ---
 - Change 1: Created KeyService for cryptographic key lifecycle management

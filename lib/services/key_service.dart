@@ -128,4 +128,14 @@ class KeyService {
   Future<SimpleKeyPair> generateKeyPair() async {
     return await _algorithm.newKeyPair();
   }
+
+  /// Get the local device ID
+  Future<String?> getLocalDeviceId() async {
+    return await _storage.getLocalDeviceId();
+  }
+
+  /// Set the local device ID
+  Future<void> setLocalDeviceId(String deviceId) async {
+    await _storage.storeLocalDeviceId(deviceId);
+  }
 }
